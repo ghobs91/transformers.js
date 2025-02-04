@@ -1,4 +1,6 @@
-chrome.runtime.onMessage.addListener((message) => {
+const browserAPI = typeof browser !== "undefined" ? browser : chrome;
+
+browserAPI.runtime.onMessage.addListener((message) => {
     if (message.action === 'analyze_page') {
         if (typeof analyzeLinks !== 'undefined') {
             analyzeLinks();
@@ -30,7 +32,7 @@ const processLinks = async () => {
             text: link.innerText,
         };
 
-        chrome.runtime.sendMessage(message, (response) => {
+        browserAPI.runtime.sendMessage(message, (response) => {
             if (response && response.length > 0) {
                 const classification = response[0];
 
