@@ -1,5 +1,5 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
   "name": "extension",
   "description": "Transformers.js | Sample browser extension",
   "version": "0.0.1",
@@ -11,8 +11,8 @@
     "unlimitedStorage"
   ],
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "scripts": ["background.js"],
+    "persistent": true
   },
   "content_scripts": [
     {
@@ -36,6 +36,11 @@
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "sentiment-addon@example.com"
+    }
   },
   "icons": {
     "16": "icons/icon.png",

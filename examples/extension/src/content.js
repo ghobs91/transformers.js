@@ -10,6 +10,10 @@ browserAPI.runtime.onMessage.addListener((message) => {
     }
 });
 
+const websiteDomSelectorDict = {
+    'youtube.com': {'textTarget': '#video-title', 'ancestorTarget': 'ytd-rich-item-renderer'},
+};
+
 const analyzeLinks = async () => {
     if (typeof document === 'undefined') return; // Ensure this only runs in a content script
     
@@ -21,15 +25,35 @@ const analyzeLinks = async () => {
     }
 };
 
-const processLinks = async () => {
-    const links = document.querySelectorAll('a');
+const waitForElements = (selector, callback) => {
+    const observer = new MutationObserver((mutations, observer) => {
+        const elements = document.querySelectorAll(selector);
+        if (elements.length > 0) {
+            callback(elements);
+            observer.disconnect();
+        }
+    });
 
-    for (let link of links) {
-        if (!link.innerText.trim()) continue;
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+const processLinks = async () => {
+    const cleanHostname = window.location.hostname.replace('www.', '');
+    const domSelectorForURL = websiteDomSelectorDict[cleanHostname]['textTarget'];
+    const domSelectorForAncestor = websiteDomSelectorDict[cleanHostname]['ancestorTarget'];
+    console.log(`Processing links for ${cleanHostname}, the domselectorForUrl is ${domSelectorForURL} and the domSelectorForAncestor is ${domSelectorForAncestor}`);
+    const targetElements = waitForElements(domSelectorForURL, (elements) => {
+        return elements;
+    });
+    console.log(`Found ${targetElements.length} target elements`);
+
+    for (let targetElement of targetElements) {
+        console.log(`targetElement.innerText: ${targetElement.innerText}`);
+        // if (!targetElement.innerText.trim()) continue;
 
         const message = {
             action: 'classify',
-            text: link.innerText,
+            text: targetElement.innerText,
         };
 
         browserAPI.runtime.sendMessage(message, (response) => {
@@ -37,31 +61,20 @@ const processLinks = async () => {
                 const classification = response[0];
 
                 if (classification.label === 'NEGATIVE' && classification.score > 0.7) {
-                    const overlay = document.createElement('div');
-                    overlay.innerText = 'Bad vibes blocked';
-                    overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                    overlay.style.color = 'white';
-                    overlay.style.padding = '10px';
-                    overlay.style.borderRadius = '16px';
-                    overlay.style.border = '1px solid rgba(255, 255, 255, 0.3)';
-                    overlay.style.boxShadow = '0 4px 30px rgba(0, 0, 0, 0.1)';
-                    overlay.style.backdropFilter = 'blur(5px)';
-                    overlay.style.position = 'absolute';
-                    overlay.style.top = '0';
-                    overlay.style.left = '0';
-                    overlay.style.width = '100%';
-                    overlay.style.height = '100%';
-                    overlay.style.display = 'flex';
-                    overlay.style.alignItems = 'center';
-                    overlay.style.justifyContent = 'center';
-                    overlay.style.cursor = 'pointer';
-                    overlay.style.zIndex = '1000';
-                    overlay.addEventListener('click', () => {
-                        overlay.style.display = 'none'; // Hide overlay
-                    });
+                    console.log(`Bad vibes detected in "${targetElement.innerText}"`);
+                    const wrapper = document.createElement('div');
+                    wrapper.innerText = 'Bad vibes blocked';
+                    wrapper.style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
+                    wrapper.style.color = 'white';
+                    wrapper.style.padding = '10px';
+                    wrapper.style.borderRadius = '5px';
+                    wrapper.style.display = 'inline-block';
+                    wrapper.style.cursor = 'pointer';
+                    wrapper.style.zIndex = '1000';
 
-                    link.style.position = 'relative'; // Ensure link remains in place
-                    link.appendChild(overlay);
+                    targetElement.style.display = 'none'; // Hide the targetElement
+                    targetElement.parentNode.insertBefore(wrapper, targetElement); // Insert the wrapper in place of the link
+                    // targetElement.closest(domSelectorForAncestor).style.display = 'none';
                 }
             }
         });

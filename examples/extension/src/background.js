@@ -19,7 +19,7 @@ class PipelineSingleton {
     }
 }
 
-const supportedWebsiteIndex = [
+const supportedWebsites = [
     'bbc.com',
     'cnn.com',
     'nytimes.com',
@@ -37,26 +37,19 @@ const supportedWebsiteIndex = [
     'foxnews.com',
     'huffpost.com',
     'buzzfeednews.com',
-    'breitbart.com',
-    'dailymail.co.uk',
-    'thesun.co.uk',
-    'rt.com',
-    'abc.net.au',
-    'smh.com.au',
-    'theage.com.au',
-    'news.com.au',
-    '9news.com.au',
-    'skynews.com.au',
-    'abc.net.au',
-    'sbs.com.au',
     'reddit.com',
     'youtube.com',
     'facebook.com',
     'twitter.com',
-    'x.com'
+    'x.com',
+    'bsky.app',
+    'theverge.com',
+    'youtube.com'
 ];
 
 const browserAPI = typeof browser !== "undefined" ? browser : chrome;
+
+console.log('Background script loaded');
 
 // Function to classify text and return sentiment results
 const classify = async (text) => {
@@ -78,7 +71,9 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Inject content script dynamically when a new tab is updated
 browserAPI.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete' && tab.url && supportedWebsiteIndex.some(website => tab.url.includes(website))) {
+    console.log('checking if site is supported')
+    if (changeInfo.status === 'complete' && tab.url && supportedWebsites.some(website => tab.url.includes(website))) {
+        console.log(`website is supported`);
         browserAPI.tabs.executeScript({
             target: { tabId: tabId },
             files: ["content.js"]
